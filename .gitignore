@@ -1,0 +1,8 @@
+file-slice-upload-fe/node_modules
+file-slice-upload-be/node_modules
+build
+file-slice-upload-fe/yarn-error.log
+file-slice-upload-be/yarn-error.log
+.env
+.DS_Store
+.idea
