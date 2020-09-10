@@ -7,6 +7,7 @@ const cors = require('@koa/cors')
 const rimraf = require("rimraf")
 
 const UPLOAD_DIR = path.resolve(__dirname, "..", "target")
+const TMP_DIR = path.resolve(__dirname, "..", "tmp")
 
 const app = new Koa()
 const router = new Router()
@@ -33,8 +34,6 @@ const pipeStream = (path, writeStream) => {
     return new Promise(resolve => {
         const readStream = fs.createReadStream(path)
         readStream.on("end", () => {
-            // 删除文件
-            fs.unlinkSync(path)
             resolve()
         })
         // 将读取到的流数据写入一个文件
@@ -44,15 +43,8 @@ const pipeStream = (path, writeStream) => {
 
 // 合并文件切片
 const mergeFileChunk = async (filePath, filename, size) => {
-    const chunkDir = path.resolve(UPLOAD_DIR, filename)
-    let chunkPaths = []
-    await fs.readdir(chunkDir, (err, filePaths) => {
-        if(err) {
-            console.error(err)
-        } else {
-            chunkPaths = filePaths
-        }
-    })
+    const chunkDir = path.resolve(TMP_DIR, filename.split(".")[0])
+    let chunkPaths = fs.readdirSync(chunkDir)
     chunkPaths.sort((a, b) => {
         return a.split("-")[1] - b.split("-")[1]
     })
@@ -65,14 +57,15 @@ const mergeFileChunk = async (filePath, filename, size) => {
             })
         )
     })
+    // 并行写入
     await Promise.all(requestList)
+    // 删除临时存放分片的目录
     rimraf(chunkDir, {
         recursive: true
     }, () => {
         console.log('done')
     })
 }
-
 
 router.get('/test', async ctx => {
     const { res } = ctx
@@ -85,7 +78,8 @@ router.post('/upload', async ctx => {
     const body = ctx.request.body
     const chunk = ctx.request.files.chunk
     const { hash, filename } = body
-    const chunkDir = path.resolve(UPLOAD_DIR, filename)
+    const chunkDir = path.resolve(TMP_DIR, filename.split(".")[0])
+    console.log({ filename })
     const dirExist = fs.existsSync(chunkDir)
     if(!dirExist) {
         // 需逐层创建  因此原始的target文件夹一定要存在

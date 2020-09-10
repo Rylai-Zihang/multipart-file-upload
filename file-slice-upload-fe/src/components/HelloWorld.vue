@@ -74,7 +74,7 @@
                 })
                 // 关键2：使用Promise.all发送全部请求(异步任务并发发送，因此要记录index值)
                 await Promise.all(requestList).then(res => {
-
+                    alert("全部上传完成")
                 })
             },
             async handleUpload() {
@@ -104,6 +104,8 @@
                         size: SIZE,
                         filename: this.container.file.name
                     })
+                }).then(res => {
+                    alert("合并完成")
                 })
             }
         }
